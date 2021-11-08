@@ -3551,10 +3551,10 @@ dependencies = [
  "hex-literal",
  "pallet-aura",
  "pallet-balances",
+ "pallet-feeless",
  "pallet-grandpa",
  "pallet-randomness-collective-flip",
  "pallet-sudo",
- "pallet-template",
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
@@ -3771,6 +3771,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-feeless"
+version = "3.0.0-monthly-2021-10"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-grandpa"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate.git?tag=monthly-2021-10#bf9683eee40f82cc4e01a05cd375b0e8bba3c8ef"
@@ -3840,20 +3855,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
-]
-
-[[package]]
-name = "pallet-template"
-version = "3.0.0-monthly-2021-10"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
 ]
 
 [[package]]
