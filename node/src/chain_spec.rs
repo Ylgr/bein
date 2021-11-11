@@ -150,9 +150,6 @@ fn testnet_genesis(
 			// Assign network admin rights.
 			key: root_key.clone(),
 		},
-		// TODO: maybe dont need this. -> delete
-		feeless: FeelessConfig {
-			key: root_key
-		}
+		feeless: Default::default()
 	}
 }

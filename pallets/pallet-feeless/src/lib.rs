@@ -1,9 +1,33 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
-use frame_system::pallet_prelude::*;
 use sp_std::boxed::Box;
-use sp_runtime::SaturatedConversion;
+use sp_std::vec::Vec;
+use sp_runtime::{
+	SaturatedConversion,
+	traits::{
+		Saturating, Zero
+	}
+};
+
+use frame_system::pallet_prelude::*;
+use frame_support::{
+	pallet_prelude::*,
+	RuntimeDebug,
+	ensure,
+	traits::{
+		Currency, LockableCurrency, ReservableCurrency,
+		UnfilteredDispatchable
+	},
+	weights:: {
+		GetDispatchInfo,
+		Weight
+	}
+};
+
+use scale_info::TypeInfo;
+use codec::{Decode, Encode};
+
 
 #[cfg(test)]
 mod mock;
@@ -14,53 +38,67 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+type BalanceOf<T> =
+	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+
+#[derive(Encode, Decode, Default, RuntimeDebug, TypeInfo)]
+pub struct StakingLevel<Balance> {
+	bic_locked: Balance,
+	bandwidth: u32
+}
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::{
-		dispatch::DispatchResultWithPostInfo, 
-		pallet_prelude::*,
-		traits::UnfilteredDispatchable, 
-		weights::{
-			GetDispatchInfo,
-			ClassifyDispatch,
-			PaysFee,
-			WeighData
-		}
-	};
-	use sp_runtime::traits::{
-		AtLeast32BitUnsigned,
-		Saturating
-	};
-
+	
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config + Sized {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
-		type Balance: Member + Parameter + AtLeast32BitUnsigned + Default + Copy + From<u64> + MaxEncodedLen;
-
 		type Call: Parameter + UnfilteredDispatchable<Origin = Self::Origin> + GetDispatchInfo;
+
+		type Currency: ReservableCurrency<Self::AccountId>
+			+ LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
+		
+		#[pallet::constant]
+		type Period: Get<Self::BlockNumber>; //TODO: assigned in runtime
 	}
 
 	#[pallet::call]
-	impl<T: Config> Pallet<T>
-	{
+	impl<T: Config> Pallet<T> {
+	
+		#[pallet::weight(10_000)]
+		pub fn stake_bic(
+			origin: OriginFor<T>,
+			#[pallet::compact] amount: BalanceOf<T>
+		) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			
+			let current_stake = Self::get_stake(&sender);
+			let now_stake = current_stake.saturating_add(amount);
+			
+			StakingMap::<T>::insert(&sender, now_stake);
+			T::Currency::reserve(&sender, amount);
+
+			Ok(().into())
+		}
 
 		#[pallet::weight(10_000)]
-		pub fn grant_bandwidth(
+		pub fn unstake_bic(
 			origin: OriginFor<T>,
-			user: T::AccountId,
-			#[pallet::compact] amount: T::Balance
 		) -> DispatchResultWithPostInfo {
-			// This is a public call, so we ensure that the origin is some signed account.
 			let sender = ensure_signed(origin)?;
-			ensure!(sender == Self::key(), Error::<T>::SomthingErr);
-			
-			BandwidthAllow::<T>::insert(user, amount);
+			ensure!(StakingMap::<T>::contains_key(&sender), Error::<T>::SomthingErr); //TODO: clarify error
 
-			// Sudo user does not pay a fee.
-			Ok(Pays::No.into())
+			let current_stake = Self::get_stake(&sender);
+			T::Currency::unreserve(&sender, current_stake);
+
+			StakingMap::<T>::remove(&sender);
+			BandwidthMap::<T>::remove(&sender);
+
+			Ok(().into())
 		}
+
 
 		#[pallet::weight({
 			let dispatch_info = call.get_dispatch_info();
@@ -71,27 +109,22 @@ pub mod pallet {
 			call: Box<<T as Config>::Call>,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin.clone())?;
-			
-			let dispatch_info = call.get_dispatch_info();
-			let remain_bandwidth = Self::get_balance(&sender);
-			
-			let res = call.dispatch_bypass_filter(origin);
 
-			let tx_weight = T::Balance::from(dispatch_info.weight);
-			if remain_bandwidth < tx_weight {
-				BandwidthAllow::<T>::insert(
-					&sender, 
-					remain_bandwidth.saturating_sub(remain_bandwidth)
-				);
-				let need_to_pay = tx_weight.saturating_sub(remain_bandwidth).saturated_into::<u64>();
-				return Ok(Some(need_to_pay).into())
-			} else {
-				BandwidthAllow::<T>::insert(
-					&sender, 
-					remain_bandwidth.saturating_sub(tx_weight)
-				);
-				return Ok(Pays::No.into())
-			}
+			let remain_bandwidth = Self::get_bandwidth(&sender);
+			ensure!(remain_bandwidth > 0, Error::<T>::SomthingErr);
+			BandwidthMap::<T>::insert(&sender, remain_bandwidth - 1);
+
+			call.dispatch_bypass_filter(origin)?;
+
+			Ok(Pays::No.into())
+		}
+	}
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+
+		fn on_finalize(n: T::BlockNumber) {
+			Self::finalize_block(n);
 		}
 	}
 
@@ -100,50 +133,108 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]
-	#[pallet::getter(fn get_balance)]
-	pub(super) type BandwidthAllow<T: Config> = StorageMap<
+	#[pallet::getter(fn get_bandwidth)]
+	pub(super) type BandwidthMap<T: Config> = StorageMap<
 	    _,
 	    Blake2_128Concat,
 	    T::AccountId,
-	    T::Balance,
+	    u32,
 	    ValueQuery
     	>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn key)]
-	pub(super) type Key<T: Config> = StorageValue<_, T::AccountId, ValueQuery>;
-
+	#[pallet::getter(fn get_stake)]
+	pub(super) type StakingMap<T: Config> = StorageMap<
+		_,
+		Blake2_128Concat,
+		T::AccountId,
+		BalanceOf<T>,
+		ValueQuery
+		>;
 	
+	#[pallet::storage]
+	#[pallet::getter(fn get_staking_level)]
+	pub(super) type StakingLevelMap<T: Config> = StorageMap<
+		_,
+		Blake2_128Concat,
+		u32,
+		StakingLevel<BalanceOf<T>>,
+		ValueQuery
+		>;
+	
+	//TODO: define this
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		SomethingStored(u32, T::AccountId),
 	}
 
-	// Errors inform users that something went wrong.
+	//TODO: define this
 	#[pallet::error]
 	pub enum Error<T> {
 		SomthingErr
 	}
-
 	
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
-		/// The `AccountId` of the sudo key.
-		pub key: T::AccountId,
+		_phantom: sp_std::marker::PhantomData<T>,
 	}
 
 	#[cfg(feature = "std")]
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
-			Self { key: Default::default() }
+			GenesisConfig { _phantom: Default::default() }
 		}
 	}
 
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			<Key<T>>::put(&self.key);
+			//TODO: why cannot convert from u128 -> BalanceOf<T>?
+			Pallet::<T>::add_staking_level(1, BalanceOf::<T>::from(1e9 as u32), 10);
+			Pallet::<T>::add_staking_level(2, BalanceOf::<T>::from(2e9 as u32), 20);
 		}
+	}
+}
+
+impl<T: Config> Pallet<T> {
+	fn add_staking_level(level_index: u32, bic_locked: BalanceOf<T>, bandwidth: u32) {
+		StakingLevelMap::<T>::insert(
+			level_index,
+			StakingLevel {
+				bic_locked,
+				bandwidth
+			}
+		);
+	}
+
+	fn init_stake_new_period() {
+		let mut level_keys = StakingLevelMap::<T>::iter_keys().collect::<Vec<_>>();
+		level_keys.sort();
+		level_keys.reverse();
+		let staking_account_keys = StakingMap::<T>::iter_keys().collect::<Vec<_>>();
+
+		for account in staking_account_keys.iter() {
+			let account_staking = Self::get_stake(&account);
+
+			for level in level_keys.iter() {
+				let staking_level = Self::get_staking_level(level);
+				let bic_locked = staking_level.bic_locked;
+				let bandwidth = staking_level.bandwidth;
+
+				if account_staking >= bic_locked {
+					BandwidthMap::<T>::insert(&account, bandwidth);
+					break;
+				}
+			}
+		}
+
+	}
+
+	fn finalize_block(now: T::BlockNumber) {
+		if !(now % T::Period::get()).is_zero() {
+			return;
+		}
+		Self::init_stake_new_period();
 	}
 }

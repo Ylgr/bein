@@ -272,14 +272,19 @@ impl pallet_sudo::Config for Runtime {
 	type Call = Call;
 }
 
+parameter_types! {
+	pub const Period: BlockNumber = 20;
+}
+
 /// Configure the pallet-template in pallets/template.
 impl pallet_feeless::Config for Runtime {
 	type Event = Event;
 
-	type Balance = Balance;
-
 	type Call = Call;
 
+	type Period = Period;
+
+	type Currency = Balances;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

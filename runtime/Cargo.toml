@@ -189,6 +189,9 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-10'
 version = '4.0.0-dev'
 
+[dependencies]
+log = "0.4.14"
+
 [features]
 default = ['std']
 runtime-benchmarks = [
