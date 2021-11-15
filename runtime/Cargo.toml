@@ -189,6 +189,37 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-10'
 version = '4.0.0-dev'
 
+# Frontier
+[dependencies.pallet-ethereum]
+default-features = false
+git = 'https://github.com/Ylgr/frontier.git'
+branch = 'master'
+
+[dependencies.pallet-evm]
+default-features = false
+git = 'https://github.com/Ylgr/frontier.git'
+branch = 'master'
+
+[dependencies.pallet-base-fee]
+default-features = false
+git = 'https://github.com/Ylgr/frontier.git'
+branch = 'master'
+
+[dependencies.pallet-evm-precompile-simple]
+default-features = false
+git = 'https://github.com/Ylgr/frontier.git'
+branch = 'master'
+
+[dependencies.pallet-evm-precompile-sha3fips]
+default-features = false
+git = 'https://github.com/Ylgr/frontier.git'
+branch = 'master'
+
+[dependencies.pallet-evm-precompile-modexp]
+default-features = false
+git = 'https://github.com/Ylgr/frontier.git'
+branch = 'master'
+
 [dependencies]
 log = "0.4.14"
 
@@ -232,4 +263,11 @@ std = [
     'sp-std/std',
     'sp-transaction-pool/std',
     'sp-version/std',
+
+#    frontier
+    'pallet-ethereum/std',
+    'pallet-evm/std',
+    'pallet-base-fee/std',
+    'pallet-evm-precompile-simple/std',
+    'pallet-evm-precompile-sha3fips/std',
 ]
