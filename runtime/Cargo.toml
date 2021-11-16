@@ -205,6 +205,11 @@ default-features = false
 git = 'https://github.com/Ylgr/frontier.git'
 branch = 'master'
 
+[dependencies.pallet-base-fee]
+default-features = false
+git = 'https://github.com/Ylgr/frontier.git'
+branch = 'master'
+
 [dependencies.pallet-evm-precompile-simple]
 default-features = false
 git = 'https://github.com/Ylgr/frontier.git'
