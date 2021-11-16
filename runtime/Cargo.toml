@@ -234,7 +234,9 @@ branch = 'master'
 log = "0.4.14"
 
 [features]
-default = ['std']
+default = ["std", "aura"]
+aura = []
+manual-seal = []
 runtime-benchmarks = [
     'frame-benchmarking',
     'frame-support/runtime-benchmarks',

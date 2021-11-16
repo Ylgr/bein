@@ -28,6 +28,10 @@ version = '3.0.0-monthly-2021-10'
 [dependencies]
 jsonrpc-core = '18.0.0'
 structopt = '0.3.8'
+jsonrpc-pubsub = "18.0.0"
+futures = "0.3"
+log = "0.4.8"
+async-trait = "0.1"
 
 [dependencies.frame-benchmarking]
 git = 'https://github.com/paritytech/substrate.git'
@@ -65,7 +69,17 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-10'
 version = '0.10.0-dev'
 
+[dependencies.sc-consensus-manual-seal]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-10'
+version = '0.10.0-dev'
+
 [dependencies.sc-consensus-aura]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-10'
+version = '0.10.0-dev'
+
+[dependencies.sc-network]
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-10'
 version = '0.10.0-dev'
@@ -152,6 +166,11 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-10'
 version = '4.0.0-dev'
 
+[dependencies.sp-inherents]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-10'
+version = '4.0.0-dev'
+
 [dependencies.sp-runtime]
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-10'
@@ -176,6 +195,38 @@ branch = 'master'
 git = 'https://github.com/Ylgr/frontier.git'
 branch = 'master'
 
+[dependencies.pallet-dynamic-fee]
+git = 'https://github.com/Ylgr/frontier.git'
+branch = 'master'
+
+[dependencies.fc-consensus]
+git = 'https://github.com/Ylgr/frontier.git'
+branch = 'master'
+
+[dependencies.fc-rpc]
+git = 'https://github.com/Ylgr/frontier.git'
+branch = 'master'
+
+[dependencies.fc-rpc-core]
+git = 'https://github.com/Ylgr/frontier.git'
+branch = 'master'
+
+[dependencies.fc-db]
+git = 'https://github.com/Ylgr/frontier.git'
+branch = 'master'
+
+[dependencies.fc-mapping-sync]
+git = 'https://github.com/Ylgr/frontier.git'
+branch = 'master'
+
+[dependencies.fp-rpc]
+git = 'https://github.com/Ylgr/frontier.git'
+branch = 'master'
+
 [features]
-default = []
-runtime-benchmarks = ['node-template-runtime/runtime-benchmarks']
+default = ["aura"]
+aura = ["node-template-runtime/aura"]
+manual-seal = ["node-template-runtime/manual-seal"]
+runtime-benchmarks = [
+    "node-template-runtime/runtime-benchmarks",
+]
