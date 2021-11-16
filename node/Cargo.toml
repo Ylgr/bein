@@ -167,6 +167,15 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-10'
 version = '4.0.0-dev'
 
+# Frontier
+[dependencies.pallet-ethereum]
+git = 'https://github.com/Ylgr/frontier.git'
+branch = 'master'
+
+[dependencies.pallet-evm]
+git = 'https://github.com/Ylgr/frontier.git'
+branch = 'master'
+
 [features]
 default = []
 runtime-benchmarks = ['node-template-runtime/runtime-benchmarks']

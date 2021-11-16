@@ -3690,6 +3690,8 @@ dependencies = [
  "frame-benchmarking-cli",
  "jsonrpc-core",
  "node-template-runtime",
+ "pallet-ethereum",
+ "pallet-evm",
  "pallet-transaction-payment-rpc",
  "sc-basic-authorship",
  "sc-cli",
