@@ -48,7 +48,6 @@ pub use sp_runtime::{Perbill, Permill};
 
 use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, Transaction as EthereumTransaction};
-use pallet_evm::FeeCalculator;
 use pallet_evm::{Account as EVMAccount, EnsureAddressTruncated, HashedAddressMapping, Runner};
 
 
@@ -287,19 +286,12 @@ impl pallet_sudo::Config for Runtime {
 	type Call = Call;
 }
 
-pub struct BaseFeeThreshold;
-impl pallet_base_fee::BaseFeeThreshold for BaseFeeThreshold {
-	fn lower() -> Permill {
-		Permill::zero()
-	}
-	fn upper() -> Permill {
-		Permill::from_parts(1_000_000)
-	}
+frame_support::parameter_types! {
+	pub BoundDivision: U256 = U256::from(1024);
 }
 
-impl pallet_base_fee::Config for Runtime {
-	type Event = Event;
-	type Threshold = BaseFeeThreshold;
+impl pallet_dynamic_fee::Config for Runtime {
+	type MinGasPriceBoundDivisor = BoundDivision;
 }
 
 pub struct FindAuthorTruncated<F>(PhantomData<F>);
@@ -323,7 +315,7 @@ parameter_types! {
 }
 
 impl pallet_evm::Config for Runtime {
-	type FeeCalculator = BaseFee;
+	type FeeCalculator = DynamicFee;
 	type GasWeightMapping = ();
 	type BlockHashMapping = pallet_ethereum::EthereumBlockHashMapping<Self>;
 	type CallOrigin = EnsureAddressTruncated;
@@ -403,7 +395,7 @@ construct_runtime!(
 
 		Ethereum: pallet_ethereum::{Pallet, Call, Storage, Event, Config, Origin},
 		EVM: pallet_evm::{Pallet, Config, Call, Storage, Event<T>},
-		BaseFee: pallet_base_fee::{Pallet, Call, Storage, Config<T>, Event},
+		DynamicFee: pallet_dynamic_fee::{Pallet, Call, Storage, Config, Inherent},
 
 		// Include the custom logic from the pallet-template in the runtime.
 		Feeless: pallet_feeless::{Pallet, Call, Config<T>, Storage, Event<T>},

@@ -3927,7 +3927,7 @@ dependencies = [
  "log",
  "pallet-aura",
  "pallet-balances",
- "pallet-base-fee",
+ "pallet-dynamic-fee",
  "pallet-ethereum",
  "pallet-evm",
  "pallet-evm-precompile-modexp",
@@ -4187,21 +4187,6 @@ dependencies = [
  "scale-info",
  "sp-runtime",
  "sp-std",
-]
-
-[[package]]
-name = "pallet-base-fee"
-version = "1.0.0"
-source = "git+https://github.com/Ylgr/frontier.git?branch=master#022f23f4482568c331e886cbe3aa66b26e4e3d10"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-evm",
- "parity-scale-codec",
- "scale-info",
- "serde",
- "sp-core",
- "sp-runtime",
 ]
 
 [[package]]

@@ -200,7 +200,7 @@ default-features = false
 git = 'https://github.com/Ylgr/frontier.git'
 branch = 'master'
 
-[dependencies.pallet-base-fee]
+[dependencies.pallet-dynamic-fee]
 default-features = false
 git = 'https://github.com/Ylgr/frontier.git'
 branch = 'master'
@@ -279,7 +279,7 @@ std = [
 #    frontier
     'pallet-ethereum/std',
     'pallet-evm/std',
-    'pallet-base-fee/std',
+    'pallet-dynamic-fee/std',
     'pallet-evm-precompile-simple/std',
     'pallet-evm-precompile-sha3fips/std',
     'fp-rpc/std',
