@@ -285,6 +285,8 @@ impl pallet_feeless::Config for Runtime {
 	type Period = Period;
 
 	type Currency = Balances;
+
+	type TxPayment = TransactionPayment;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
