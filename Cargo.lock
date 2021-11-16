@@ -4200,6 +4200,7 @@ dependencies = [
  "pallet-evm",
  "parity-scale-codec",
  "scale-info",
+ "serde",
  "sp-core",
  "sp-runtime",
 ]
