@@ -4281,6 +4281,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-evm-account"
+version = "3.0.0-monthly-2021-10"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "libsecp256k1 0.3.5",
+ "pallet-evm",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-evm-precompile-modexp"
 version = "2.0.0-dev"
 source = "git+https://github.com/Ylgr/frontier.git?branch=master#f9e3ee78839098bdfbbb5a1606f3596715d43e66"

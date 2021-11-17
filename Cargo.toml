@@ -5,5 +5,6 @@ panic = 'unwind'
 members = [
     'node',
     'pallets/pallet-feeless',
+    'pallets/pallet-evm-account',
     'runtime',
 ]
