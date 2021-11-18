@@ -6,7 +6,8 @@ use sp_std::vec::Vec;
 use sp_runtime::{
 	SaturatedConversion,
 	traits::{
-		Saturating, Zero
+		Saturating
+		// , Zero
 	}
 };
 
@@ -69,6 +70,18 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 	
+		#[pallet::weight(10_000)]
+		pub fn force_period(
+			origin: OriginFor<T>
+		) -> DispatchResultWithPostInfo {
+			ensure_root(origin)?;
+
+			let current_block = <frame_system::Pallet<T>>::block_number();
+			LPBlock::<T>::put(current_block);
+			
+			Ok(().into())
+		}
+
 		#[pallet::weight(10_000)]
 		pub fn stake_bic(
 			origin: OriginFor<T>,
@@ -135,6 +148,10 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]
+	#[pallet::getter(fn last_period_block)]
+	pub(super) type LPBlock<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
+
+	#[pallet::storage]
 	#[pallet::getter(fn get_bandwidth)]
 	pub(super) type BandwidthMap<T: Config> = StorageMap<
 	    _,
@@ -192,6 +209,7 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
+			LPBlock::<T>::put(T::BlockNumber::saturated_from(0u128));
 			Pallet::<T>::add_staking_level(
 				1,
 				BalanceOf::<T>::saturated_from(5e18 as u128), 
@@ -242,9 +260,16 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn finalize_block(now: T::BlockNumber) {
-		if !(now % T::Period::get()).is_zero() {
+		if now == Self::last_period_block() {
+			Self::init_stake_new_period();
 			return;
 		}
+
+		if Self::last_period_block() + T::Period::get() != now {
+			return;
+		}
+		
+		LPBlock::<T>::put(now);
 		Self::init_stake_new_period();
 	}
 }

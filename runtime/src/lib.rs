@@ -273,7 +273,7 @@ impl pallet_sudo::Config for Runtime {
 }
 
 parameter_types! {
-	pub const Period: BlockNumber = 20;
+	pub const Period: BlockNumber = DAYS;
 }
 
 /// Configure the pallet-template in pallets/template.
