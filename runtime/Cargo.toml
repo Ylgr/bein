@@ -17,6 +17,11 @@ default-features = false
 path = '../pallets/pallet-feeless'
 version = '3.0.0-monthly-2021-10'
 
+[dependencies.pallet-evm-account]
+default-features = false
+path = '../pallets/pallet-evm-account'
+version = '3.0.0-monthly-2021-10'
+
 [build-dependencies.substrate-wasm-builder]
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-10'
@@ -266,6 +271,7 @@ std = [
     'pallet-randomness-collective-flip/std',
     'pallet-sudo/std',
     'pallet-feeless/std',
+    'pallet-evm-account/std',
     'pallet-timestamp/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-transaction-payment/std',

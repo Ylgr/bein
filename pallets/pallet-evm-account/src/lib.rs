@@ -19,6 +19,7 @@ use sp_io::{
 use sp_runtime::{
 	DispatchResult,
 };
+use sp_std::vec::Vec;
 
 
 pub trait MergeAccount<AccountId> {

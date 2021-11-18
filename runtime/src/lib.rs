@@ -49,11 +49,15 @@ pub use sp_runtime::{Perbill, Permill};
 
 use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, Transaction as EthereumTransaction};
-use pallet_evm::{Account as EVMAccount, EnsureAddressTruncated, HashedAddressMapping, Runner};
+use pallet_evm::{Account as EVMAccount, EnsureAddressTruncated, Runner};
 use pallet_evm::FeeCalculator;
+use pallet_evm_account::EvmAddressMapping;
+use precompiles::FrontierPrecompiles;
+use impls::MergeAccountEvm;
 
 mod precompiles;
-use precompiles::FrontierPrecompiles;
+mod impls;
+mod weights;
 
 /// Import the template pallet.
 pub use pallet_feeless;
@@ -328,7 +332,7 @@ impl pallet_evm::Config for Runtime {
 	type BlockHashMapping = pallet_ethereum::EthereumBlockHashMapping<Self>;
 	type CallOrigin = EnsureAddressTruncated;
 	type WithdrawOrigin = EnsureAddressTruncated;
-	type AddressMapping = HashedAddressMapping<BlakeTwo256>;
+	type AddressMapping = EvmAddressMapping<Runtime>;
 	type Currency = Balances;
 	type Event = Event;
 	type PrecompilesType = FrontierPrecompiles<Self>;
@@ -375,6 +379,14 @@ impl pallet_base_fee::Config for Runtime {
 	type Threshold = BaseFeeThreshold;
 }
 
+impl pallet_evm_account::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	type AddressMapping = EvmAddressMapping<Runtime>;
+	type MergeAccount = MergeAccountEvm;
+	type WeightInfo = weights::evm_accounts::WeightInfo<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -398,6 +410,8 @@ construct_runtime!(
 
 		// Include the custom logic from the pallet-template in the runtime.
 		Feeless: pallet_feeless::{Pallet, Call, Config<T>, Storage, Event<T>},
+		EvmAccounts: pallet_evm_account::{Pallet, Call, Storage, Event<T>},
+
 	}
 );
 
