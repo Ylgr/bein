@@ -350,7 +350,7 @@ impl pallet_ethereum::Config for Runtime {
 }
 
 parameter_types! {
-	pub const Period: BlockNumber = 20;
+	pub const Period: BlockNumber = DAYS;
 }
 
 /// Configure the pallet-template in pallets/template.
@@ -362,6 +362,8 @@ impl pallet_feeless::Config for Runtime {
 	type Period = Period;
 
 	type Currency = Balances;
+
+	type TxPayment = TransactionPayment;
 }
 
 pub struct BaseFeeThreshold;

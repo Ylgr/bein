@@ -9,6 +9,14 @@ use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use std::{collections::BTreeMap, str::FromStr};
 
+pub fn bein_properties() -> sc_service::Properties {
+	let mut p = sc_service::Properties::new();
+	p.insert("ss58format".into(), 42.into());
+	p.insert("tokenDecimals".into(), 18.into());
+	p.insert("tokenSymbol".into(), "BIC".into());
+	p
+}
+
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
@@ -70,7 +78,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
 		// Protocol ID
 		None,
 		// Properties
-		None,
+		Some(bein_properties()),
 		// Extensions
 		None,
 	))
@@ -117,7 +125,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 		// Protocol ID
 		None,
 		// Properties
-		None,
+		Some(bein_properties()),
 		// Extensions
 		None,
 	))
@@ -139,7 +147,7 @@ fn testnet_genesis(
 		},
 		balances: BalancesConfig {
 			// Configure endowed accounts with initial balance of 1 << 60.
-			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
+			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 70)).collect(),
 		},
 		aura: AuraConfig {
 			authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),

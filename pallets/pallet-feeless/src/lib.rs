@@ -6,7 +6,8 @@ use sp_std::vec::Vec;
 use sp_runtime::{
 	SaturatedConversion,
 	traits::{
-		Saturating, Zero
+		Saturating
+		// , Zero
 	}
 };
 
@@ -17,11 +18,11 @@ use frame_support::{
 	ensure,
 	traits::{
 		Currency, LockableCurrency, ReservableCurrency,
-		UnfilteredDispatchable
+		UnfilteredDispatchable, EstimateCallFee
 	},
 	weights:: {
 		GetDispatchInfo,
-		Weight
+		// Weight
 	}
 };
 
@@ -44,7 +45,7 @@ type BalanceOf<T> =
 #[derive(Encode, Decode, Default, RuntimeDebug, TypeInfo)]
 pub struct StakingLevel<Balance> {
 	bic_locked: Balance,
-	bandwidth: u32
+	bandwidth: Balance
 }
 
 #[frame_support::pallet]
@@ -62,11 +63,25 @@ pub mod pallet {
 		
 		#[pallet::constant]
 		type Period: Get<Self::BlockNumber>; //TODO: assigned in runtime
+
+		type TxPayment: EstimateCallFee<<Self as Config>::Call, BalanceOf<Self>>;
 	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 	
+		#[pallet::weight(10_000)]
+		pub fn force_period(
+			origin: OriginFor<T>
+		) -> DispatchResultWithPostInfo {
+			ensure_root(origin)?;
+
+			let current_block = <frame_system::Pallet<T>>::block_number();
+			LPBlock::<T>::put(current_block);
+			
+			Ok(().into())
+		}
+
 		#[pallet::weight(10_000)]
 		pub fn stake_bic(
 			origin: OriginFor<T>,
@@ -78,7 +93,7 @@ pub mod pallet {
 			let now_stake = current_stake.saturating_add(amount);
 			
 			StakingMap::<T>::insert(&sender, now_stake);
-			T::Currency::reserve(&sender, amount);
+			T::Currency::reserve(&sender, amount)?;
 
 			Ok(().into())
 		}
@@ -109,13 +124,13 @@ pub mod pallet {
 			call: Box<<T as Config>::Call>,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin.clone())?;
-
+			
+			let call_fee = T::TxPayment::estimate_call_fee(&call, ().into());
 			let remain_bandwidth = Self::get_bandwidth(&sender);
-			ensure!(remain_bandwidth > 0, Error::<T>::SomthingErr);
-			BandwidthMap::<T>::insert(&sender, remain_bandwidth - 1);
+			ensure!(remain_bandwidth >= call_fee, Error::<T>::SomthingErr);
+			BandwidthMap::<T>::insert(&sender, remain_bandwidth.saturating_sub(call_fee));
 
 			call.dispatch_bypass_filter(origin)?;
-
 			Ok(Pays::No.into())
 		}
 	}
@@ -133,12 +148,16 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]
+	#[pallet::getter(fn last_period_block)]
+	pub(super) type LPBlock<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
+
+	#[pallet::storage]
 	#[pallet::getter(fn get_bandwidth)]
 	pub(super) type BandwidthMap<T: Config> = StorageMap<
 	    _,
 	    Blake2_128Concat,
 	    T::AccountId,
-	    u32,
+	    BalanceOf<T>,
 	    ValueQuery
     	>;
 
@@ -157,7 +176,7 @@ pub mod pallet {
 	pub(super) type StakingLevelMap<T: Config> = StorageMap<
 		_,
 		Blake2_128Concat,
-		u32,
+		u8,
 		StakingLevel<BalanceOf<T>>,
 		ValueQuery
 		>;
@@ -190,15 +209,24 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			//TODO: why cannot convert from u128 -> BalanceOf<T>?
-			Pallet::<T>::add_staking_level(1, BalanceOf::<T>::from(1e9 as u32), 10);
-			Pallet::<T>::add_staking_level(2, BalanceOf::<T>::from(2e9 as u32), 20);
+			LPBlock::<T>::put(T::BlockNumber::saturated_from(0u128));
+			Pallet::<T>::add_staking_level(
+				1,
+				BalanceOf::<T>::saturated_from(5e18 as u128), 
+				BalanceOf::<T>::saturated_from(1e18 as u128)
+			);
+
+			Pallet::<T>::add_staking_level(
+				2, 
+				BalanceOf::<T>::saturated_from(1e19 as u128), 
+				BalanceOf::<T>::saturated_from(2e18 as u128)
+			);
 		}
 	}
 }
 
 impl<T: Config> Pallet<T> {
-	fn add_staking_level(level_index: u32, bic_locked: BalanceOf<T>, bandwidth: u32) {
+	fn add_staking_level(level_index: u8, bic_locked: BalanceOf<T>, bandwidth: BalanceOf<T>) {
 		StakingLevelMap::<T>::insert(
 			level_index,
 			StakingLevel {
@@ -232,9 +260,16 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn finalize_block(now: T::BlockNumber) {
-		if !(now % T::Period::get()).is_zero() {
+		if now == Self::last_period_block() {
+			Self::init_stake_new_period();
 			return;
 		}
+
+		if Self::last_period_block() + T::Period::get() != now {
+			return;
+		}
+		
+		LPBlock::<T>::put(now);
 		Self::init_stake_new_period();
 	}
 }
