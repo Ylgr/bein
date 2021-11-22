@@ -7,7 +7,6 @@ use sp_runtime::{
 	SaturatedConversion,
 	traits::{
 		Saturating
-		// , Zero
 	}
 };
 
@@ -22,7 +21,6 @@ use frame_support::{
 	},
 	weights:: {
 		GetDispatchInfo,
-		// Weight
 	}
 };
 
@@ -62,7 +60,7 @@ pub mod pallet {
 			+ LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
 		
 		#[pallet::constant]
-		type Period: Get<Self::BlockNumber>; //TODO: assigned in runtime
+		type Period: Get<Self::BlockNumber>;
 
 		type TxPayment: EstimateCallFee<<Self as Config>::Call, BalanceOf<Self>>;
 	}
@@ -78,6 +76,7 @@ pub mod pallet {
 
 			let current_block = <frame_system::Pallet<T>>::block_number();
 			LPBlock::<T>::put(current_block);
+			Self::deposit_event(Event::PeriodForced(current_block));
 			
 			Ok(().into())
 		}
@@ -94,6 +93,7 @@ pub mod pallet {
 			
 			StakingMap::<T>::insert(&sender, now_stake);
 			T::Currency::reserve(&sender, amount)?;
+			Self::deposit_event(Event::Stake(sender, amount));
 
 			Ok(().into())
 		}
@@ -103,13 +103,14 @@ pub mod pallet {
 			origin: OriginFor<T>,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
-			ensure!(StakingMap::<T>::contains_key(&sender), Error::<T>::SomthingErr); //TODO: clarify error
+			ensure!(StakingMap::<T>::contains_key(&sender), Error::<T>::NotAStaker);
 
 			let current_stake = Self::get_stake(&sender);
 			T::Currency::unreserve(&sender, current_stake);
 
 			StakingMap::<T>::remove(&sender);
 			BandwidthMap::<T>::remove(&sender);
+			Self::deposit_event(Event::UnstakeAll(sender));
 
 			Ok(().into())
 		}
@@ -126,13 +127,17 @@ pub mod pallet {
 			let sender = ensure_signed(origin.clone())?;
 			
 			let call_fee = T::TxPayment::estimate_call_fee(&call, ().into());
-			let remain_bandwidth = Self::get_bandwidth(&sender);
-			ensure!(remain_bandwidth >= call_fee, Error::<T>::SomthingErr);
-			BandwidthMap::<T>::insert(&sender, remain_bandwidth.saturating_sub(call_fee));
-
 			call.dispatch_bypass_filter(origin)?;
-			Ok(Pays::No.into())
+			let remain_bandwidth = Self::get_bandwidth(&sender);
+
+			if remain_bandwidth >= call_fee {
+				BandwidthMap::<T>::insert(&sender, remain_bandwidth.saturating_sub(call_fee));
+				Self::deposit_event(Event::BandwidthSpent(sender, call_fee));
+				return Ok(Pays::No.into());
+			}
+			return Ok(().into())
 		}
+			
 	}
 
 	#[pallet::hooks]
@@ -181,17 +186,18 @@ pub mod pallet {
 		ValueQuery
 		>;
 	
-	//TODO: define this
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		SomethingStored(u32, T::AccountId),
+		PeriodForced(T::BlockNumber),
+		Stake(T::AccountId, BalanceOf<T>),
+		UnstakeAll(T::AccountId),
+		BandwidthSpent(T::AccountId, BalanceOf<T>)
 	}
 
-	//TODO: define this
 	#[pallet::error]
 	pub enum Error<T> {
-		SomthingErr
+		NotAStaker
 	}
 	
 	#[pallet::genesis_config]
