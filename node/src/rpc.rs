@@ -7,7 +7,7 @@ use fc_rpc::{
 	SchemaV2Override, StorageOverride,
 };
 use fc_rpc_core::types::FilterPool;
-use node_template_runtime::{opaque::Block, AccountId, Balance, Hash, Index};
+use bein_runtime::{opaque::Block, AccountId, Balance, Hash, Index};
 use jsonrpc_pubsub::manager::SubscriptionManager;
 use pallet_ethereum::EthereumStorageSchema;
 use sc_client_api::{
@@ -143,7 +143,7 @@ pub fn create_full<C, P, BE, A>(
 		client.clone(),
 		pool.clone(),
 		graph,
-		node_template_runtime::TransactionConverter,
+		bein_runtime::TransactionConverter,
 		network.clone(),
 		signers,
 		overrides.clone(),

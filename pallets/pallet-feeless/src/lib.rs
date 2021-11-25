@@ -49,7 +49,7 @@ pub struct StakingLevel<Balance> {
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	
+
 	#[pallet::config]
 	pub trait Config: frame_system::Config + Sized {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
@@ -58,7 +58,7 @@ pub mod pallet {
 
 		type Currency: ReservableCurrency<Self::AccountId>
 			+ LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
-		
+
 		#[pallet::constant]
 		type Period: Get<Self::BlockNumber>;
 
@@ -67,7 +67,7 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-	
+
 		#[pallet::weight(10_000)]
 		pub fn force_period(
 			origin: OriginFor<T>
@@ -77,7 +77,7 @@ pub mod pallet {
 			let current_block = <frame_system::Pallet<T>>::block_number();
 			LPBlock::<T>::put(current_block);
 			Self::deposit_event(Event::PeriodForced(current_block));
-			
+
 			Ok(().into())
 		}
 
@@ -87,10 +87,10 @@ pub mod pallet {
 			#[pallet::compact] amount: BalanceOf<T>
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
-			
+
 			let current_stake = Self::get_stake(&sender);
 			let now_stake = current_stake.saturating_add(amount);
-			
+
 			StakingMap::<T>::insert(&sender, now_stake);
 			T::Currency::reserve(&sender, amount)?;
 			Self::deposit_event(Event::Stake(sender, amount));
@@ -125,7 +125,7 @@ pub mod pallet {
 			call: Box<<T as Config>::Call>,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin.clone())?;
-			
+
 			let call_fee = T::TxPayment::estimate_call_fee(&call, ().into());
 			call.dispatch_bypass_filter(origin)?;
 			let remain_bandwidth = Self::get_bandwidth(&sender);
@@ -137,7 +137,7 @@ pub mod pallet {
 			}
 			return Ok(().into())
 		}
-			
+
 	}
 
 	#[pallet::hooks]
@@ -175,7 +175,7 @@ pub mod pallet {
 		BalanceOf<T>,
 		ValueQuery
 		>;
-	
+
 	#[pallet::storage]
 	#[pallet::getter(fn get_staking_level)]
 	pub(super) type StakingLevelMap<T: Config> = StorageMap<
@@ -185,7 +185,7 @@ pub mod pallet {
 		StakingLevel<BalanceOf<T>>,
 		ValueQuery
 		>;
-	
+
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -199,7 +199,7 @@ pub mod pallet {
 	pub enum Error<T> {
 		NotAStaker
 	}
-	
+
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
 		_phantom: sp_std::marker::PhantomData<T>,
@@ -218,14 +218,14 @@ pub mod pallet {
 			LPBlock::<T>::put(T::BlockNumber::saturated_from(0u128));
 			Pallet::<T>::add_staking_level(
 				1,
-				BalanceOf::<T>::saturated_from(5e18 as u128), 
+				BalanceOf::<T>::saturated_from(10000e18 as u128),
 				BalanceOf::<T>::saturated_from(1e18 as u128)
 			);
 
 			Pallet::<T>::add_staking_level(
-				2, 
-				BalanceOf::<T>::saturated_from(1e19 as u128), 
-				BalanceOf::<T>::saturated_from(2e18 as u128)
+				2,
+				BalanceOf::<T>::saturated_from(70000e18 as u128),
+				BalanceOf::<T>::saturated_from(3e18 as u128)
 			);
 		}
 	}
@@ -274,7 +274,7 @@ impl<T: Config> Pallet<T> {
 		if Self::last_period_block() + T::Period::get() != now {
 			return;
 		}
-		
+
 		LPBlock::<T>::put(now);
 		Self::init_stake_new_period();
 	}
