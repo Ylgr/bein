@@ -1,7 +1,7 @@
 # Bein Chain
 
 [![Substrate version](https://img.shields.io/badge/Substrate-4.0.0--dev-blue?logo=Parity%20Substrate)](https://substrate.dev/)
-[![No License](https://img.shields.io/apm/l/License?label=License)](https://github.com/Ylgr/bein/blob/master/LICENSE)
+[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](https://github.com/Ylgr/bein/blob/master/LICENSE)
 
 Bein Chain is a Substrate-based Blockchain platform with a mission together with the social network Bein Group (expected to launch in the third quarter of 2022) to bring Blockchain to everyone to gradually educate users about Blockchain.
 
